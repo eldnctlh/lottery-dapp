@@ -54,7 +54,7 @@ const useLottery = () => {
         const betFee = await lotteryContract.betFee()
         const purchaseRatio = await lotteryContract.purchaseRatio()
         const betsClosingTime = await lotteryContract.betsClosingTime()
-        console.log(Number(betsClosingTime))
+
         const date = new Date(0)
         date.setUTCSeconds(Number(betsClosingTime))
         setLotteryState({
