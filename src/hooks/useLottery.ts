@@ -62,7 +62,7 @@ const useLottery = () => {
             betFee: ethers.utils.formatEther(betFee),
             betPrice: ethers.utils.formatEther(betPrice),
             purchaseRatio: String(purchaseRatio),
-            betsClosingTime: date.toUTCString(),
+            betsClosingTime: date.toString(),
         })
         setIsLoading(false)
     }
