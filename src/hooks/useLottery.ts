@@ -51,19 +51,18 @@ const useLottery = () => {
         setProvider(provider)
         setContract(lotteryContract)
         const betPrice = await lotteryContract.betPrice()
-        const betFee = await lotteryContract.betPrice()
+        const betFee = await lotteryContract.betFee()
         const purchaseRatio = await lotteryContract.purchaseRatio()
         const betsClosingTime = await lotteryContract.betsClosingTime()
-
+        console.log(Number(betsClosingTime))
         const date = new Date(0)
         date.setUTCSeconds(Number(betsClosingTime))
-
         setLotteryState({
             ...lotteryState,
             betFee: ethers.utils.formatEther(betFee),
             betPrice: ethers.utils.formatEther(betPrice),
             purchaseRatio: String(purchaseRatio),
-            betsClosingTime: date.toString(),
+            betsClosingTime: date.toUTCString(),
         })
         setIsLoading(false)
     }
@@ -140,7 +139,11 @@ const useLottery = () => {
         }
     }
 
-    return { lotteryState, openBets, isLoading, closeBets }
+    const bet = async (amount: string) => {
+        //TODO: bet {amount} times
+    }
+
+    return { lotteryState, openBets, isLoading, closeBets, bet }
 }
 
 export default useLottery
