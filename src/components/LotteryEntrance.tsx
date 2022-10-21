@@ -87,7 +87,7 @@ export default () => {
                         htmlFor="betAmount"
                         className="block mb-2 text-sm font-medium text-gray-900"
                     >
-                        Enter how much to bet with {lotteryState.betPrice} ETH +{" "}
+                        How many times to bet with {lotteryState.betPrice} ETH +{" "}
                         {Number(lotteryState.betFee).toFixed(2)} ETH fees
                     </label>
                     <input
