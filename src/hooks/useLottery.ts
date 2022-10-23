@@ -5,6 +5,7 @@ import abi from "../constants/abi"
 import contractAddresses from "../constants/contractAddresses"
 import { useMoralis } from "react-moralis"
 import { useNotification } from "@web3uikit/core"
+import tokenAbi from "../constants/tokenAbi"
 
 type lotteryStateType = {
     betsClosingTime: string
@@ -13,6 +14,9 @@ type lotteryStateType = {
     purchaseRatio: string
     betPrice: string
     betFee: string
+    accountPrize: string
+    tokenSymbol: string
+    tokenName: string
     betsOpen: boolean
 }
 
@@ -20,6 +24,7 @@ const useLottery = () => {
     const { account, ...rest } = useMoralis()
     const dispatch = useNotification()
     const [contract, setContract] = useState<Contract>()
+    const [tokenContract, setTokenContract] = useState<Contract>()
     const [provider, setProvider] = useState<ethers.providers.Provider>()
     const [signer, setSigner] = useState<ethers.Signer>()
     const [lotteryState, setLotteryState] = useState<lotteryStateType>({
@@ -30,6 +35,9 @@ const useLottery = () => {
         betPrice: "",
         betFee: "",
         betsOpen: false,
+        accountPrize: "",
+        tokenSymbol: "",
+        tokenName: "",
     })
     const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -46,13 +54,22 @@ const useLottery = () => {
             abi.abi,
             signer
         )
+        const paymentToken = await lotteryContract.paymentToken()
+        const tokenContract = new ethers.Contract(paymentToken, tokenAbi.abi, signer)
 
         setSigner(signer)
         setProvider(provider)
         setContract(lotteryContract)
+        setTokenContract(paymentToken)
+        const tokenName = await tokenContract.name()
+        const tokenSymbol = await tokenContract.symbol()
         const betPrice = await lotteryContract.betPrice()
         const betFee = await lotteryContract.betFee()
         const purchaseRatio = await lotteryContract.purchaseRatio()
+        const address = await signer.getAddress()
+        const accountPrize = await lotteryContract.prize(address)
+        const prizePool = await lotteryContract.prizePool()
+        const ownerPool = await lotteryContract.ownerPool()
         const betsClosingTime = await lotteryContract.betsClosingTime()
 
         const date = new Date(0)
@@ -63,6 +80,11 @@ const useLottery = () => {
             betPrice: ethers.utils.formatEther(betPrice),
             purchaseRatio: String(purchaseRatio),
             betsClosingTime: date.toString(),
+            accountPrize: ethers.utils.formatEther(accountPrize),
+            prizePool: ethers.utils.formatEther(prizePool),
+            ownerPool: ethers.utils.formatEther(ownerPool),
+            tokenSymbol,
+            tokenName,
         })
         setIsLoading(false)
     }
