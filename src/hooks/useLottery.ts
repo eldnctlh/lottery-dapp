@@ -113,7 +113,8 @@ const useLottery = () => {
         if (provider && lotteryContract) {
             setIsLoading(true)
             try {
-                const tx = await lotteryContract.openBets(Date.now() + Number(duration))
+                const currentBlock = await provider.getBlock("latest")
+                const tx = await lotteryContract.openBets(currentBlock.timestamp + Number(duration))
                 const receipt = await tx.wait()
                 await updateDynamicState()
                 setLotteryState({
