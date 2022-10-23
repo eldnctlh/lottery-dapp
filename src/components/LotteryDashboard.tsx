@@ -2,10 +2,11 @@ import { MouseEventHandler, useState } from "react"
 import useLottery from "../hooks/useLottery"
 
 export default () => {
-    const { lotteryState, isLoading, openBets, closeBets, bet } = useLottery()
+    const { lotteryState, isLoading, openBets, closeBets, bet, buyTokens } = useLottery()
 
     const [duration, setDuration] = useState<string>("")
     const [betAmount, setBetAmount] = useState<string>("1")
+    const [burnAmount, setBurnAmount] = useState<string>("")
     const [tokensAmount, setTokensAmount] = useState<string>("")
     const [withdrawPrizeAmount, setWithdrawPrizeAmount] = useState<string>("")
     const [withdrawOwnerPrizeAmount, setWithdrawOwnerPrizeAmount] = useState<string>("")
@@ -22,9 +23,18 @@ export default () => {
         }
     }
 
+    const handleBuyTokens: MouseEventHandler = () => {
+        if (tokensAmount) {
+            buyTokens(tokensAmount)
+        }
+    }
+
+    const handleBurnTokens: MouseEventHandler = () => {}
+
     return (
         <div className="pt-10 flex justify-center">
-            <div className="max-w-sm rounded overflow-hidden shadow-lg p-5 mx-3">
+            {/* Lottery state */}
+            <div className="max-w-sm rounded overflow-hidden shadow-lg p-5 mx-3 min-w-max">
                 <h3 className="py-2 text-xl font-medium text-gray-900 text-center border-b-2 mb-5">
                     Lottery state
                 </h3>
@@ -38,7 +48,9 @@ export default () => {
                 <p className="py-2 font-medium text-gray-900">
                     Bet closing time: {lotteryState.betsClosingTime}
                 </p>
-                <p className="py-2 font-medium text-gray-900">Bet fee: {lotteryState.betFee} ETH</p>
+                <p className="py-2 font-medium text-gray-900">
+                    Bet fee: {Number(lotteryState.betFee).toFixed(2)} {lotteryState.tokenSymbol}
+                </p>
                 <p className="py-2 font-medium text-gray-900">
                     Bet price: {lotteryState.betPrice} ETH
                 </p>
@@ -46,13 +58,14 @@ export default () => {
                     Purchase ratio: {lotteryState.purchaseRatio}
                 </p>
                 <p className="py-2 font-medium text-gray-900">
-                    Prize pool: {lotteryState.prizePool} ETH
+                    Prize pool: {lotteryState.prizePool} {lotteryState.tokenSymbol}
                 </p>
                 <p className="py-2 font-medium text-gray-900">
-                    Owner pool: {lotteryState.ownerPool} ETH
+                    Owner pool: {lotteryState.ownerPool} {lotteryState.tokenSymbol}
                 </p>
             </div>
-            <div className="flex flex-wrap items-start">
+            <div className="flex flex-wrap">
+                {/* Manage Lottery state */}
                 <div className="w-2/5 rounded overflow-hidden shadow-lg p-5 mx-3">
                     <h3 className="py-2 text-xl font-medium text-gray-900 text-center border-b-2 mb-5">
                         Manage lottery state
@@ -88,6 +101,7 @@ export default () => {
                         </button>
                     </div>
                 </div>
+                {/* Buy tokens */}
                 <div className="w-2/5 rounded overflow-hidden shadow-lg p-5 mx-3 mt-5">
                     <h3 className="py-2 text-xl font-medium text-gray-900 text-center border-b-2 mb-5">
                         Buy {lotteryState.tokenName}
@@ -109,17 +123,16 @@ export default () => {
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Amount"
                     />
-                    <div className="flex justify-start">
-                        <button
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
-                            onClick={handleOpenBets}
-                            disabled={isLoading || !tokensAmount}
-                        >
-                            Buy {Number(tokensAmount) * Number(lotteryState.purchaseRatio)}{" "}
-                            {lotteryState.tokenSymbol}
-                        </button>
-                    </div>
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
+                        onClick={handleBuyTokens}
+                        disabled={isLoading || !tokensAmount}
+                    >
+                        Buy {Number(tokensAmount) * Number(lotteryState.purchaseRatio)}{" "}
+                        {lotteryState.tokenSymbol}
+                    </button>
                 </div>
+                {/* Manage bets */}
                 <div className="w-2/5 rounded overflow-hidden shadow-lg p-5 mx-3 mt-5">
                     <h3 className="py-2 text-xl font-medium text-gray-900 text-center border-b-2 mb-5">
                         Manage bets
@@ -128,8 +141,9 @@ export default () => {
                         htmlFor="betAmount"
                         className="block mb-2 text-sm font-medium text-gray-900"
                     >
-                        How many times to bet with {lotteryState.betPrice} ETH +{" "}
-                        {Number(lotteryState.betFee).toFixed(2)} ETH fees
+                        How many times to bet with {lotteryState.betPrice}{" "}
+                        {lotteryState.tokenSymbol} + {Number(lotteryState.betFee).toFixed(2)}{" "}
+                        {lotteryState.tokenSymbol} fees
                     </label>
                     <input
                         type="text"
@@ -139,16 +153,15 @@ export default () => {
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Amount"
                     />
-                    <div className="flex justify-start">
-                        <button
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
-                            onClick={handleOpenBets}
-                            disabled={isLoading || !betAmount}
-                        >
-                            Bet
-                        </button>
-                    </div>
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
+                        onClick={handleBet}
+                        disabled={isLoading || !betAmount}
+                    >
+                        Bet
+                    </button>
                 </div>
+                {/* Withdraw */}
                 <div className="w-2/5 rounded overflow-hidden shadow-lg p-5 mx-3 mt-5">
                     <h3 className="py-2 text-xl font-medium text-gray-900 text-center border-b-2 mb-5">
                         Withdraw
@@ -170,15 +183,19 @@ export default () => {
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Amount"
                     />
-                    <div className="flex justify-start">
-                        <button
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
-                            onClick={handleOpenBets}
-                            disabled={isLoading || !withdrawPrizeAmount}
-                        >
-                            Withdraw prize
-                        </button>
-                    </div>
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
+                        onClick={handleOpenBets}
+                        disabled={isLoading || !withdrawPrizeAmount}
+                    >
+                        Withdraw prize
+                    </button>
+                </div>
+                {/* Withdraw as owner */}
+                <div className="w-2/5 rounded overflow-hidden shadow-lg p-5 mx-3 mt-5">
+                    <h3 className="py-2 text-xl font-medium text-gray-900 text-center border-b-2 mb-5">
+                        Withdraw as owner
+                    </h3>
                     <label
                         htmlFor="withdrawOwnerPrizeAmount"
                         className="mt-5 block mb-2 text-sm font-medium text-gray-900"
@@ -193,15 +210,44 @@ export default () => {
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Amount"
                     />
-                    <div className="flex justify-start">
-                        <button
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
-                            onClick={handleOpenBets}
-                            disabled={isLoading || !withdrawOwnerPrizeAmount}
-                        >
-                            Withdraw owner's prize
-                        </button>
-                    </div>
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
+                        onClick={handleOpenBets}
+                        disabled={isLoading || !withdrawOwnerPrizeAmount}
+                    >
+                        Withdraw owner's prize
+                    </button>
+                </div>
+                {/* Burn */}
+                <div className="w-2/5 rounded overflow-hidden shadow-lg p-5 mx-3 mt-5">
+                    <h3 className="py-2 text-xl font-medium text-gray-900 text-center border-b-2 mb-5">
+                        Burn tokens
+                    </h3>
+                    <label
+                        htmlFor="burnAmount"
+                        className="block mb-2 text-sm font-medium text-gray-900"
+                    >
+                        Tokens amount
+                    </label>
+                    <p className="py-2 font-medium text-sm text-gray-600">
+                        Your account's balance: {lotteryState.accountBalance}{" "}
+                        {lotteryState.tokenSymbol}
+                    </p>
+                    <input
+                        type="text"
+                        id="burnAmount"
+                        onChange={(e) => setBurnAmount(e.target.value)}
+                        value={burnAmount}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="Amount"
+                    />
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded disabled:bg-gray-400"
+                        onClick={handleBurnTokens}
+                        disabled={isLoading || !burnAmount}
+                    >
+                        Burn tokens
+                    </button>
                 </div>
             </div>
         </div>

@@ -15,18 +15,19 @@ type lotteryStateType = {
     betPrice: string
     betFee: string
     accountPrize: string
+    accountBalance: string
     tokenSymbol: string
     tokenName: string
     betsOpen: boolean
 }
 
 const useLottery = () => {
-    const { account, ...rest } = useMoralis()
     const dispatch = useNotification()
-    const [contract, setContract] = useState<Contract>()
+    const [lotteryContract, setLotteryContract] = useState<Contract>()
     const [tokenContract, setTokenContract] = useState<Contract>()
     const [provider, setProvider] = useState<ethers.providers.Provider>()
     const [signer, setSigner] = useState<ethers.Signer>()
+    const [accountAddress, setAccountAddress] = useState<string>()
     const [lotteryState, setLotteryState] = useState<lotteryStateType>({
         betsClosingTime: "",
         ownerPool: "",
@@ -36,6 +37,7 @@ const useLottery = () => {
         betFee: "",
         betsOpen: false,
         accountPrize: "",
+        accountBalance: "",
         tokenSymbol: "",
         tokenName: "",
     })
@@ -49,6 +51,8 @@ const useLottery = () => {
         setIsLoading(true)
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const signer = provider.getSigner()
+        const address = await signer.getAddress()
+
         const lotteryContract = new ethers.Contract(
             contractAddresses.lotteryContract,
             abi.abi,
@@ -59,14 +63,15 @@ const useLottery = () => {
 
         setSigner(signer)
         setProvider(provider)
-        setContract(lotteryContract)
-        setTokenContract(paymentToken)
+        setLotteryContract(lotteryContract)
+        setTokenContract(tokenContract)
+        setAccountAddress(address)
         const tokenName = await tokenContract.name()
         const tokenSymbol = await tokenContract.symbol()
+        const accountBalance = await tokenContract.balanceOf(address)
         const betPrice = await lotteryContract.betPrice()
         const betFee = await lotteryContract.betFee()
         const purchaseRatio = await lotteryContract.purchaseRatio()
-        const address = await signer.getAddress()
         const accountPrize = await lotteryContract.prize(address)
         const prizePool = await lotteryContract.prizePool()
         const ownerPool = await lotteryContract.ownerPool()
@@ -79,8 +84,9 @@ const useLottery = () => {
             betFee: ethers.utils.formatEther(betFee),
             betPrice: ethers.utils.formatEther(betPrice),
             purchaseRatio: String(purchaseRatio),
-            betsClosingTime: date.toString(),
+            betsClosingTime: date.toString().slice(0, 24),
             accountPrize: ethers.utils.formatEther(accountPrize),
+            accountBalance: ethers.utils.formatEther(accountBalance),
             prizePool: ethers.utils.formatEther(prizePool),
             ownerPool: ethers.utils.formatEther(ownerPool),
             tokenSymbol,
@@ -90,23 +96,24 @@ const useLottery = () => {
     }
 
     const updateDynamicState = async () => {
-        if (contract) {
-            const betsClosingTime = await contract.betsClosingTime()
+        if (lotteryContract && tokenContract) {
+            const betsClosingTime = await lotteryContract.betsClosingTime()
+            const accountBalance = await tokenContract.balanceOf(accountAddress)
             const date = new Date(0)
             date.setUTCSeconds(Number(betsClosingTime))
             setLotteryState({
                 ...lotteryState,
-                betsClosingTime: date.toDateString(),
+                betsClosingTime: date.toDateString().slice(0, 24),
+                accountBalance: ethers.utils.formatEther(accountBalance),
             })
         }
     }
 
     const openBets = async (duration: string) => {
-        if (provider && contract) {
+        if (provider && lotteryContract) {
             setIsLoading(true)
             try {
-                const currentBlock = await provider.getBlock("latest")
-                const tx = await contract.openBets(currentBlock.timestamp + Number(duration))
+                const tx = await lotteryContract.openBets(Date.now() + Number(duration))
                 const receipt = await tx.wait()
                 await updateDynamicState()
                 setLotteryState({
@@ -120,6 +127,7 @@ const useLottery = () => {
                     position: "topR",
                 })
             } catch (err) {
+                console.log(err)
                 dispatch({
                     type: "error",
                     message: `Error message: ${err.message}`,
@@ -132,10 +140,10 @@ const useLottery = () => {
     }
 
     const closeBets = async () => {
-        if (contract) {
+        if (lotteryContract) {
             setIsLoading(true)
             try {
-                const tx = await contract.closeLottery()
+                const tx = await lotteryContract.closeLottery()
                 const receipt = await tx.wait()
                 await updateDynamicState()
                 setLotteryState({
@@ -149,6 +157,37 @@ const useLottery = () => {
                     position: "topR",
                 })
             } catch (err) {
+                console.log(err)
+                dispatch({
+                    type: "error",
+                    message: `Error message: ${err.message}`,
+                    title: "Error",
+                    position: "topR",
+                })
+            }
+
+            setIsLoading(false)
+        }
+    }
+
+    const buyTokens = async (amount: string) => {
+        if (lotteryContract && amount) {
+            setIsLoading(true)
+            try {
+                const value = ethers.utils.parseEther(amount)
+                const tx = await lotteryContract.purchaseTokens({
+                    value,
+                })
+                const receipt = await tx.wait()
+                await updateDynamicState()
+                dispatch({
+                    type: "info",
+                    message: `Tokens bought: ${receipt.transactionHash}`,
+                    title: "Tx Notification",
+                    position: "topR",
+                })
+            } catch (err) {
+                console.log(err)
                 dispatch({
                     type: "error",
                     message: `Error message: ${err.message}`,
@@ -162,10 +201,44 @@ const useLottery = () => {
     }
 
     const bet = async (amount: string) => {
-        //TODO: bet {amount} times
+        if (lotteryContract && tokenContract && amount) {
+            setIsLoading(true)
+            try {
+                const allowTx = await tokenContract.approve(
+                    accountAddress,
+                    ethers.constants.MaxUint256
+                )
+                console.log(allowTx)
+                const rec = await allowTx.wait()
+                console.log(allowTx)
+                console.log(rec)
+
+                const tx = await lotteryContract.betMany(amount)
+                const receipt = await tx.wait()
+                console.log(`Bets placed (${receipt.transactionHash})\n`)
+
+                await updateDynamicState()
+                dispatch({
+                    type: "info",
+                    message: `Bet placed: ${receipt.transactionHash}`,
+                    title: "Tx Notification",
+                    position: "topR",
+                })
+            } catch (err) {
+                console.log(err)
+                dispatch({
+                    type: "error",
+                    message: `Error message: ${err.message}`,
+                    title: "Error",
+                    position: "topR",
+                })
+            }
+
+            setIsLoading(false)
+        }
     }
 
-    return { lotteryState, openBets, isLoading, closeBets, bet }
+    return { lotteryState, openBets, isLoading, closeBets, bet, buyTokens }
 }
 
 export default useLottery
