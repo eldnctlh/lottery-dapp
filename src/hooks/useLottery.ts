@@ -75,6 +75,7 @@ const useLottery = () => {
         const accountPrize = await lotteryContract.prize(address)
         const prizePool = await lotteryContract.prizePool()
         const ownerPool = await lotteryContract.ownerPool()
+        const betsOpen = await lotteryContract.betsOpen()
         const betsClosingTime = await lotteryContract.betsClosingTime()
 
         const date = new Date(0)
@@ -89,6 +90,7 @@ const useLottery = () => {
             accountBalance: ethers.utils.formatEther(accountBalance),
             prizePool: ethers.utils.formatEther(prizePool),
             ownerPool: ethers.utils.formatEther(ownerPool),
+            betsOpen,
             tokenSymbol,
             tokenName,
         })
@@ -98,11 +100,13 @@ const useLottery = () => {
     const updateDynamicState = async () => {
         if (lotteryContract && tokenContract) {
             const betsClosingTime = await lotteryContract.betsClosingTime()
+            const betsOpen = await lotteryContract.betsOpen()
             const accountBalance = await tokenContract.balanceOf(accountAddress)
             const date = new Date(0)
             date.setUTCSeconds(Number(betsClosingTime))
             setLotteryState({
                 ...lotteryState,
+                betsOpen,
                 betsClosingTime: date.toDateString().slice(0, 24),
                 accountBalance: ethers.utils.formatEther(accountBalance),
             })
@@ -117,10 +121,6 @@ const useLottery = () => {
                 const tx = await lotteryContract.openBets(currentBlock.timestamp + Number(duration))
                 const receipt = await tx.wait()
                 await updateDynamicState()
-                setLotteryState({
-                    ...lotteryState,
-                    betsOpen: true,
-                })
                 dispatch({
                     type: "info",
                     message: `Bets opened: ${receipt.transactionHash}`,
@@ -147,10 +147,6 @@ const useLottery = () => {
                 const tx = await lotteryContract.closeLottery()
                 const receipt = await tx.wait()
                 await updateDynamicState()
-                setLotteryState({
-                    ...lotteryState,
-                    betsOpen: false,
-                })
                 dispatch({
                     type: "info",
                     message: `Bets closed: ${receipt.transactionHash}`,
@@ -206,13 +202,10 @@ const useLottery = () => {
             setIsLoading(true)
             try {
                 const allowTx = await tokenContract.approve(
-                    accountAddress,
+                    lotteryContract.address,
                     ethers.constants.MaxUint256
                 )
-                console.log(allowTx)
-                const rec = await allowTx.wait()
-                console.log(allowTx)
-                console.log(rec)
+                await allowTx.wait()
 
                 const tx = await lotteryContract.betMany(amount)
                 const receipt = await tx.wait()

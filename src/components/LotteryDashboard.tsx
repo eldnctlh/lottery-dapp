@@ -58,10 +58,12 @@ export default () => {
                     Purchase ratio: {lotteryState.purchaseRatio}
                 </p>
                 <p className="py-2 font-medium text-gray-900">
-                    Prize pool: {lotteryState.prizePool} {lotteryState.tokenSymbol}
+                    Prize pool: {Number(lotteryState.prizePool).toFixed(2)}{" "}
+                    {lotteryState.tokenSymbol}
                 </p>
                 <p className="py-2 font-medium text-gray-900">
-                    Owner pool: {lotteryState.ownerPool} {lotteryState.tokenSymbol}
+                    Owner pool: {Number(lotteryState.ownerPool).toFixed(2)}{" "}
+                    {lotteryState.tokenSymbol}
                 </p>
             </div>
             <div className="flex flex-wrap">
@@ -230,7 +232,7 @@ export default () => {
                         Tokens amount
                     </label>
                     <p className="py-2 font-medium text-sm text-gray-600">
-                        Your account's balance: {lotteryState.accountBalance}{" "}
+                        Your account's balance: {Number(lotteryState.accountBalance).toFixed(2)}{" "}
                         {lotteryState.tokenSymbol}
                     </p>
                     <input
